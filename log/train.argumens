@@ -1,0 +1,11 @@
+====================================================================================================
+Arguments
+	lr:0.01
+	gamma:0.51
+	n_epoch:230
+	v:torch.Size([2012, 100])
+	e:torch.Size([2012, 64])
+	label_idx:torch.Size([201])
+	all_labels:torch.Size([2012])
+	labels:torch.Size([201])
+	test_idx:(1610,)

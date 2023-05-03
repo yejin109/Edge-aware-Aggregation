@@ -1,0 +1,30 @@
+====================================================================================================
+Arguments
+	data:cocitation
+	dataset:NTU2012
+	split:6
+	label_percent:0.052
+	use_exp_wt:False
+	alpha_e:0
+	alpha_n:0
+	n_hidden:64
+	n_reg_weight:torch.Size([10060, 1])
+	n_reg_sum:torch.Size([2012, 1])
+	e_reg_weight:torch.Size([10060, 1])
+	e_reg_sum:torch.Size([2012, 1])
+	e:torch.Size([2012, 64])
+	v:torch.Size([2012, 100])
+	input_dim:100
+	vidx:torch.Size([10060])
+	eidx:torch.Size([10060])
+	ve_lists:torch.Size([10060, 2])
+	n_weight:torch.Size([2012, 1])
+	e_weight:torch.Size([2012, 1])
+	ne:2012
+	nv:2012
+	n_cls:67
+	all_labels:torch.Size([2012])
+	label_idx:torch.Size([201])
+	labels:torch.Size([201])
+	val_idx:(201,)
+	test_idx:(1610,)
