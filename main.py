@@ -15,22 +15,24 @@ import numpy as np
 import pandas as pd
 from argparse import Namespace
 
-from model import load_model
+# from HNHNII.model_ver1 import load_model
+from HNHNII.model_ver2 import load_model
 from data import load_dataset
 from functionals.utils import log_arguments, get_logger
+import pickle
 
 # Training settings
 parser = argparse.ArgumentParser()
 parser.add_argument('--seed', type=int, default=42, help='Random seed.')
 
 parser.add_argument('--n_layers', type=int, default=2, help='Number of layers.')
-parser.add_argument('--n_hidden', type=int, default=64, help='hidden dimensions. For Pubmed, use 800. 400')
+parser.add_argument('--n_hidden', type=int, default=256, help='hidden dimensions. For Pubmed, use 800. 400')
 parser.add_argument('--final_edge_dim', type=int, default=64, help='Origianl : 100')
 parser.add_argument('--dropout_p', type=float, default=0.6, help='Dropout rate (1 - keep probability).')
 
-parser.add_argument('--n_epoch', type=int, default=230, help='Number of epochs to train. 230')
+parser.add_argument('--n_epoch', type=int, default=500, help='Number of epochs to train. 230')
 parser.add_argument('--patience', type=int, default=100, help='Patience')
-parser.add_argument('--lr', type=float, default=0.01, help='learning rate.')
+parser.add_argument('--lr', type=float, default=0.001, help='learning rate.')
 parser.add_argument('--gamma', type=float, default=0.51, help='Gamnma value for lr scheduler')
 
 parser.add_argument('--dataset', default='cora', help='dateset')
@@ -49,6 +51,9 @@ parser.add_argument('--nostdout', action="store_true",  help='do not output logg
 
 args = parser.parse_args()
 
+with open('./args.pkl', 'wb') as f:
+    pickle.dump(args, f)
+
 random.seed(args.seed)
 np.random.seed(args.seed)
 torch.manual_seed(args.seed)
@@ -56,7 +61,7 @@ torch.cuda.manual_seed(args.seed)
 
 dataname = f'{args.data}_{args.dataset}'
 dirname = f'{datetime.datetime.now()}'.replace(' ', '_').replace(':', '.')
-out_dir = path.Path( f'{os.environ["ROOT_DIR"]}/{args.out_dir}/HNHN-custom_{args.n_layers}_{dataname}/seed_{args.seed}' )
+out_dir = path.Path( f'{os.environ["ROOT_DIR"]}/{args.out_dir}/HNHNII-v2_{args.n_layers}_{dataname}/seed_{args.seed}' )
 
 
 if out_dir.exists():
@@ -75,8 +80,7 @@ def train(model: nn.Module, _args):
     v_init = v
     e_init = e
     loss_fn = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=_args.lr)
-
+    optimizer = optim.Adam(model.all_params(), lr=_args.lr)
     milestones = [100*i for i in range(1, 4)]
     scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=milestones, gamma=_args.gamma)
 
@@ -112,7 +116,7 @@ def eval(pred_all, idx, args):
     pred = torch.argmax(pred, -1)
     tgt = args.all_labels[idx]
     
-    acc = torch.eq(pred, tgt).sum().item()/len(tgt)
+    acc = torch.eq(pred, tgt).sum().item()/len(tgt) * 100
     return acc
 
 
@@ -122,6 +126,7 @@ def set_args(namespace, src: dict, indices: list=[]):
         indices = src.keys()
     for index in indices:
         setattr(namespace, index, src[index])
+
 
 if __name__=='__main__':    
     logs = []
