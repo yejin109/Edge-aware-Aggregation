@@ -24,16 +24,10 @@ import pickle
 # Training settings
 parser = argparse.ArgumentParser()
 parser.add_argument('--seed', type=int, default=42, help='Random seed.')
-
-parser.add_argument('--n_layers', type=int, default=2, help='Number of layers.')
-parser.add_argument('--n_hidden', type=int, default=256, help='hidden dimensions. For Pubmed, use 800. 400')
-parser.add_argument('--final_edge_dim', type=int, default=64, help='Origianl : 100')
-parser.add_argument('--dropout_p', type=float, default=0.6, help='Dropout rate (1 - keep probability).')
-
 parser.add_argument('--n_epoch', type=int, default=500, help='Number of epochs to train. 230')
 parser.add_argument('--patience', type=int, default=100, help='Patience')
-parser.add_argument('--lr', type=float, default=0.001, help='learning rate.')
-parser.add_argument('--gamma', type=float, default=0.51, help='Gamnma value for lr scheduler')
+parser.add_argument('--lr', type=float, default=0.01, help='learning rate.')
+parser.add_argument('--gamma', type=float, default=.51, help='Gamnma value for lr scheduler. 0.51, 5e-4')
 
 parser.add_argument('--dataset', default='cora', help='dateset')
 parser.add_argument('--data', type=str, default='cocitation', help='data name (coauthorship/cocitation)')
@@ -48,6 +42,23 @@ parser.add_argument('--split', type=int, default=1,  help='choose which train/te
 
 parser.add_argument('--out-dir', type=str, default='runs/test',  help='output dir')
 parser.add_argument('--nostdout', action="store_true",  help='do not output logging to terminal')
+
+
+# Model Structure
+parser.add_argument('--n_layers', type=int, default=2, help='Number of layers.')
+parser.add_argument('--n_hidden', type=int, default=128, help='hidden dimensions. For Pubmed, use 800. 400')
+parser.add_argument('--final_edge_dim', type=int, default=64, help='Origianl : 100')
+
+parser.add_argument('--mlp_layers', type=int, default=1)
+parser.add_argument('--norm', type=str, default='ln')
+
+parser.add_argument('--lamda', type=float, default=0.5)
+parser.add_argument('--alpha', type=float, default=0.1)
+
+parser.add_argument('--dropout_p', type=float, default=0.6, help='Dropout rate (1 - keep probability).')
+parser.add_argument('--inp_dropout_p', type=float, default=0.2, help='Dropout rate (1 - keep probability).')
+
+parser.add_argument('--activation', type=str, default='relu')
 
 args = parser.parse_args()
 

@@ -1,11 +1,11 @@
 ====================================================================================================
 Arguments
-	lr:0.001
+	lr:0.01
 	gamma:0.51
-	n_epoch:500
-	v:torch.Size([1434, 1433])
-	e:torch.Size([1579, 256])
-	label_idx:torch.Size([143])
-	all_labels:torch.Size([1434])
-	labels:torch.Size([143])
-	test_idx:(1148,)
+	n_epoch:300
+	v:torch.Size([3840, 500])
+	e:torch.Size([7963, 128])
+	label_idx:torch.Size([384])
+	all_labels:torch.Size([3840])
+	labels:torch.Size([384])
+	test_idx:(3072,)
