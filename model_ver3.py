@@ -32,7 +32,6 @@ class HNHNIIConv(nn.Module):
         self.node2msg = MLP(in_features, out_features, out_features, layer, dropout=dropout_p, Normalization=norm, InputNorm=True)
         self.edge2msg = MLP(in_features+out_features, out_features, out_features, layer, dropout=dropout_p, Normalization=norm, InputNorm=True)
         self.node_agg = MLP(out_features, out_features, out_features, layer, dropout=dropout_p, Normalization=norm, InputNorm=True)
-        self.edge_agg = MLP(out_features, out_features, out_features, layer, dropout=dropout_p, Normalization=norm, InputNorm=True)
 
 
     def forward(self, v, e, v0, e0, alpha, beta):
@@ -81,9 +80,11 @@ class Hypergraph(nn.Module):
         norm = args.norm
         layer = args.mlp_layers
 
+        self.vidx = vidx
+        self.eidx = eidx
+
         self.node_map = torch.nn.Linear(self.args.input_dim, self.args.n_hidden).to(os.environ['DEVICE'])
-        self.edge_emb = torch.nn.Embedding(ne, self.args.n_hidden, device=os.environ['DEVICE'])
-        self.edge_map = torch.nn.Linear(self.args.n_hidden, self.args.n_hidden).to(os.environ['DEVICE'])
+        self.edge_map = torch.nn.Linear(self.args.input_dim, self.args.n_hidden).to(os.environ['DEVICE'])
 
         self.convs = []
         for _ in range(self.args.n_layers):
@@ -91,7 +92,7 @@ class Hypergraph(nn.Module):
         
         self.inp_dropout = nn.Dropout(inp_dropout)
         self.dropout = nn.Dropout(dropout)
-        act = {'Id': nn.Identity(), 'relu': nn.ReLU(), 'prelu':nn.PReLU()}
+        act = {'id': nn.Identity(), 'relu': nn.ReLU(), 'prelu':nn.PReLU()}
         self.act = act[args.activation]
         self.cls = MLP(self.args.n_hidden, self.args.n_hidden//2, self.args.n_cls, layer, dropout=dropout, Normalization=norm, InputNorm=False)
 
@@ -101,24 +102,26 @@ class Hypergraph(nn.Module):
         Return predicted cls.
         '''
         # Initialize X_E \gets 0. Project X_V to hidden dimension
+        e0 = torch_scatter.scatter_mean(v[self.vidx], self.eidx, dim=0)   
+        e0 = self.inp_dropout(e0)   
+        e0 = self.edge_map(e0)
+        e0 = F.relu(e0)
+
         v = self.inp_dropout(v)
-        v0 = F.relu(self.node_map(v)) 
+        v0 = self.node_map(v) 
+        v0 = F.relu(v0)         
         
-        e0 = self.edge_emb(torch.arange(self.args.ne).long().to(os.environ['DEVICE']))
-        e0 = F.relu(self.edge_map(e0))
-                
+
         # For i=1 to n_layers do
         v, e = v0, e0
 
         for i, conv in enumerate(self.convs):
             beta = math.log(self.lamda/(i+1)+1)
 
-            v = self.dropout(v)
             v, e = conv(v, e, v0, e0, self.alpha, beta)
             v = self.act(v)
             e = self.act(e)
 
-        # v = self.dropout(v)
         pred = self.cls(v)
         return v, e, pred
     

@@ -16,7 +16,8 @@ import pandas as pd
 from argparse import Namespace
 
 # from HNHNII.model_ver1 import load_model
-from HNHNII.model_ver2 import load_model
+# from HNHNII.model_ver2 import load_model
+from HNHNII.model_ver4 import load_model
 from data import load_dataset
 from functionals.utils import log_arguments, get_logger
 import pickle
@@ -24,10 +25,10 @@ import pickle
 # Training settings
 parser = argparse.ArgumentParser()
 parser.add_argument('--seed', type=int, default=42, help='Random seed.')
-parser.add_argument('--n_epoch', type=int, default=500, help='Number of epochs to train. 230')
+parser.add_argument('--n_epoch', type=int, default=300, help='Number of epochs to train. 230')
 parser.add_argument('--patience', type=int, default=100, help='Patience')
 parser.add_argument('--lr', type=float, default=0.01, help='learning rate.')
-parser.add_argument('--gamma', type=float, default=.51, help='Gamnma value for lr scheduler. 0.51, 5e-4')
+parser.add_argument('--gamma', type=float, default=0.51, help='Gamnma value for lr scheduler. 0.51, 5e-4')
 
 parser.add_argument('--dataset', default='cora', help='dateset')
 parser.add_argument('--data', type=str, default='cocitation', help='data name (coauthorship/cocitation)')
@@ -72,7 +73,7 @@ torch.cuda.manual_seed(args.seed)
 
 dataname = f'{args.data}_{args.dataset}'
 dirname = f'{datetime.datetime.now()}'.replace(' ', '_').replace(':', '.')
-out_dir = path.Path( f'{os.environ["ROOT_DIR"]}/{args.out_dir}/HNHNII-v2_{args.n_layers}_{dataname}/seed_{args.seed}' )
+out_dir = path.Path( f'{os.environ["ROOT_DIR"]}/{args.out_dir}/HNHNII-v4_{args.n_layers}_{dataname}/seed_{args.seed}' )
 
 
 if out_dir.exists():
@@ -92,6 +93,7 @@ def train(model: nn.Module, _args):
     e_init = e
     loss_fn = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.all_params(), lr=_args.lr)
+    # optimizer = optim.SGD(model.all_params(), lr=_args.lr)
     milestones = [100*i for i in range(1, 4)]
     scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=milestones, gamma=_args.gamma)
 
@@ -140,6 +142,7 @@ def set_args(namespace, src: dict, indices: list=[]):
 
 
 if __name__=='__main__':    
+    torch.autograd.set_detect_anomaly(True)
     logs = []
     for run in range(args.n_runs):
         data_arg = Namespace()
@@ -148,7 +151,7 @@ if __name__=='__main__':
         log_arguments(data_arg, f'{os.environ["ROOT_DIR"]}/log/data.arguments')
 
         model_arg = Namespace()
-        set_args(model_arg, vars(args), ['n_layers', 'n_hidden', 'final_edge_dim', 'dropout_p'])
+        set_args(model_arg, vars(args), ['n_layers', 'n_hidden', 'final_edge_dim', 'dropout_p', 'lamda', 'alpha', 'inp_dropout_p', 'norm', 'mlp_layers', 'activation'])
         set_args(model_arg, vars(data_arg))
         model = load_model(model_arg)
         log_arguments(model_arg, F'{os.environ["ROOT_DIR"]}/log/model.arguments')
@@ -164,5 +167,5 @@ if __name__=='__main__':
 
         resultlogger.info(f"Average final test accuracy: {np.mean(test_accuracy)} ± {np.std(test_accuracy)}")
         resultlogger.info("Train cost: {:.4f}s".format(time.time() - run_start))
-    a = pd.DataFrame([log.split(',') for log in logs])
-    a.to_csv(f'{"/".join(out_dir.split("/")[:-1])}/perf_split_{args.split}.csv')
+    # a = pd.DataFrame([log.split(',') for log in logs])
+    # a.to_csv(f'{"/".join(out_dir.split("/")[:-1])}/perf_split_{args.split}.csv')

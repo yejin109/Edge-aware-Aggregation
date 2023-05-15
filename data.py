@@ -33,7 +33,6 @@ def load_dataset(args):
     n_weight = torch.Tensor([(1/w if w > 0 else 1) for w in n_weight]).unsqueeze(-1).to(device) 
     e_weight = torch.Tensor([(1/w if w > 0 else 1) for w in e_weight]).unsqueeze(-1).to(device) 
 
-
     #weights for regularization 
     paper2sum = defaultdict(list)
     author2sum = defaultdict(list)

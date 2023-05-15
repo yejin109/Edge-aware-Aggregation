@@ -1,0 +1,5 @@
+alpha: 0.5
+lamda: 0.1
+dropout_p: 0.6
+inp_dropout_p: 0.2
+activation: relu
