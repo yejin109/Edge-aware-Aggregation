@@ -15,9 +15,7 @@ import numpy as np
 import pandas as pd
 from argparse import Namespace
 
-# from HNHNII.model_ver1 import load_model
-# from HNHNII.model_ver2 import load_model
-from HNHNII.model_ver4 import load_model
+from HNHNII.model_ver7 import load_model
 from data import load_dataset
 from functionals.utils import log_arguments, get_logger
 import pickle
@@ -25,10 +23,11 @@ import pickle
 # Training settings
 parser = argparse.ArgumentParser()
 parser.add_argument('--seed', type=int, default=42, help='Random seed.')
-parser.add_argument('--n_epoch', type=int, default=300, help='Number of epochs to train. 230')
+parser.add_argument('--n_epoch', type=int, default=300, help='Number of epochs to train. 230, our 300')
 parser.add_argument('--patience', type=int, default=100, help='Patience')
 parser.add_argument('--lr', type=float, default=0.01, help='learning rate.')
-parser.add_argument('--gamma', type=float, default=0.51, help='Gamnma value for lr scheduler. 0.51, 5e-4')
+parser.add_argument('--gamma', type=float, default=0.51, help='Gamnma value for lr scheduler. 0.51')
+parser.add_argument('--wd', type=float, default=5e-4, help='weight decay. 0.01, 5e-4')
 
 parser.add_argument('--dataset', default='cora', help='dateset')
 parser.add_argument('--data', type=str, default='cocitation', help='data name (coauthorship/cocitation)')
@@ -41,14 +40,14 @@ parser.add_argument("--use_exp_wt", dest='use_exp_wt', action='store_const', def
 parser.add_argument('--n-runs', type=int, default=10, help='number of runs for repeated experiments')
 parser.add_argument('--split', type=int, default=1,  help='choose which train/test split to use')
 
-parser.add_argument('--out-dir', type=str, default='runs/test',  help='output dir')
+parser.add_argument('--out-dir', type=str, default='runs/test',  help='output dir, runs/test, runs/playground')
 parser.add_argument('--nostdout', action="store_true",  help='do not output logging to terminal')
 
 
 # Model Structure
 parser.add_argument('--n_layers', type=int, default=2, help='Number of layers.')
-parser.add_argument('--n_hidden', type=int, default=128, help='hidden dimensions. For Pubmed, use 800. 400')
-parser.add_argument('--final_edge_dim', type=int, default=64, help='Origianl : 100')
+parser.add_argument('--n_hidden', type=int, default=128, help='hidden dimensions. For Pubmed, use 800. 400, our 128, unigcnii 8, gcnii 64')
+# parser.add_argument('--final_edge_dim', type=int, default=64, help='Origianl : 100')
 
 parser.add_argument('--mlp_layers', type=int, default=1)
 parser.add_argument('--norm', type=str, default='ln')
@@ -56,10 +55,10 @@ parser.add_argument('--norm', type=str, default='ln')
 parser.add_argument('--lamda', type=float, default=0.5)
 parser.add_argument('--alpha', type=float, default=0.1)
 
-parser.add_argument('--dropout_p', type=float, default=0.6, help='Dropout rate (1 - keep probability).')
-parser.add_argument('--inp_dropout_p', type=float, default=0.2, help='Dropout rate (1 - keep probability).')
+parser.add_argument('--dropout_p', type=float, default=0.6, help='Dropout rate (1 - keep probability). origina 0.6')
+parser.add_argument('--inp_dropout_p', type=float, default=0.2, help='Dropout rate (1 - keep probability). original 0.2')
 
-parser.add_argument('--activation', type=str, default='relu')
+parser.add_argument('--activation', type=str, default='relu', help='original relu')
 
 args = parser.parse_args()
 
@@ -73,7 +72,7 @@ torch.cuda.manual_seed(args.seed)
 
 dataname = f'{args.data}_{args.dataset}'
 dirname = f'{datetime.datetime.now()}'.replace(' ', '_').replace(':', '.')
-out_dir = path.Path( f'{os.environ["ROOT_DIR"]}/{args.out_dir}/HNHNII-v4_{args.n_layers}_{dataname}/seed_{args.seed}' )
+out_dir = path.Path( f'{os.environ["ROOT_DIR"]}/{args.out_dir}/HNHNII-v7_{args.n_layers}_{dataname}/seed_{args.seed}' )
 
 
 if out_dir.exists():
@@ -92,8 +91,8 @@ def train(model: nn.Module, _args):
     v_init = v
     e_init = e
     loss_fn = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.all_params(), lr=_args.lr)
-    # optimizer = optim.SGD(model.all_params(), lr=_args.lr)
+    # optimizer = optim.SGD(model.all_params(), lr=args.lr)
+    optimizer = optim.Adam(model.all_params(), lr=_args.lr, weight_decay=args.wd)
     milestones = [100*i for i in range(1, 4)]
     scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=milestones, gamma=_args.gamma)
 
@@ -101,8 +100,11 @@ def train(model: nn.Module, _args):
     for epoch in range(_args.n_epoch):   
         start = time.time()
         v, e, pred_all = model(v_init, e_init)
-        pred = pred_all[label_idx]            
-        loss = loss_fn(pred, labels)
+        # v, e, pred_all, pred_all_init = model(v_init, e_init)
+        pred = pred_all[label_idx]     
+        # pred_init = pred_all_init[label_idx]       
+        # loss = loss_fn(pred, labels) + loss_fn(pred_init, labels)
+        loss = loss_fn(pred, labels) 
 
         optimizer.zero_grad()
         loss.backward()            
@@ -118,7 +120,6 @@ def train(model: nn.Module, _args):
         test_accs.append(acc_tes)
 
         baselogger.info(f'epoch:{epoch} | loss:{loss_tra:.4f} | train acc:{acc_tra:.2f} | test acc:{acc_tes:.2f} | time:{train_time*1000:.1f}ms')
-        # csvlogger.info(','.join([str(i) for i in [_args.run, epoch, loss_tra, acc_tra, acc_tes, train_time]]))
         logs.append(','.join([str(i) for i in [args.split, _args.run, epoch, loss_tra, acc_tra, acc_tes, train_time]]))
 
     return test_accs
@@ -151,7 +152,7 @@ if __name__=='__main__':
         log_arguments(data_arg, f'{os.environ["ROOT_DIR"]}/log/data.arguments')
 
         model_arg = Namespace()
-        set_args(model_arg, vars(args), ['n_layers', 'n_hidden', 'final_edge_dim', 'dropout_p', 'lamda', 'alpha', 'inp_dropout_p', 'norm', 'mlp_layers', 'activation'])
+        set_args(model_arg, vars(args), ['n_layers', 'n_hidden', 'dropout_p', 'lamda', 'alpha', 'inp_dropout_p', 'norm', 'mlp_layers', 'activation'])
         set_args(model_arg, vars(data_arg))
         model = load_model(model_arg)
         log_arguments(model_arg, F'{os.environ["ROOT_DIR"]}/log/model.arguments')
@@ -167,5 +168,5 @@ if __name__=='__main__':
 
         resultlogger.info(f"Average final test accuracy: {np.mean(test_accuracy)} ± {np.std(test_accuracy)}")
         resultlogger.info("Train cost: {:.4f}s".format(time.time() - run_start))
-    # a = pd.DataFrame([log.split(',') for log in logs])
-    # a.to_csv(f'{"/".join(out_dir.split("/")[:-1])}/perf_split_{args.split}.csv')
+    a = pd.DataFrame([log.split(',') for log in logs])
+    a.to_csv(f'{"/".join(out_dir.split("/")[:-1])}/perf_split_{args.split}.csv')

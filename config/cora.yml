@@ -1,3 +1,9 @@
+HNHNIIV4:
+  wd: 0
+
+HNHNIIV5:
+  wd: 0
+
 alpha: 0.1
 lamda: 0.5
 dropout_p: 0.2

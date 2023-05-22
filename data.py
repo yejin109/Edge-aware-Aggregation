@@ -22,7 +22,7 @@ def load_dataset(args):
     
     node_feature = dset.features
 
-    n_labels = max(1, math.ceil(n_node*args.label_percent))
+    # n_labels = max(1, math.ceil(n_node*args.label_percent))
 
 
     node_edges = dset.hyperedge_index.T
