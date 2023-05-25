@@ -189,3 +189,32 @@ class Hypergraph(nn.Module):
         for conv in self.convs[1:]:
             reg += conv.orthogonal_reg()
         return reg
+
+    def emb_dist(self, v, e):
+        '''
+        Take initial embeddings from the select labeled data.
+        Return predicted cls.
+        '''
+        # Initialize X_E \gets 0. Project X_V to hidden dimension
+        e0 = torch_scatter.scatter_mean(v[self.vidx], self.eidx, dim=0)   
+        e0 = self.inp_dropout(e0)   
+        e0 = self.edge_map(e0)
+        e0 = F.relu(e0)
+
+        v = self.inp_dropout(v)
+        v0 = self.node_map(v) 
+        v0 = F.relu(v0)  
+
+        # For i=1 to n_layers do
+        v, e = v0, e0
+        embs = [v.detach().cpu().numpy()]
+        for i, conv in enumerate(self.convs):
+            beta = math.log(self.lamda/(i+1)+1)
+
+            v, e = conv(v, e, v0, e0, self.alpha, beta)
+            v = self.act(v)
+            e = self.act(e)
+            
+            embs.append(v.detach().cpu().numpy())
+        embs = np.array(embs)
+        return embs

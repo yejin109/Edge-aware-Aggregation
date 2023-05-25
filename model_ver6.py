@@ -66,8 +66,6 @@ class HNHNIIConv(nn.Module):
         return node, edge
     
 
-        
-
 
 class Hypergraph(nn.Module):
     '''

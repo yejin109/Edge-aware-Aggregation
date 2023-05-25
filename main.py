@@ -20,6 +20,10 @@ from data import load_dataset
 from functionals.utils import log_arguments, get_logger
 import pickle
 
+import matplotlib.pyplot as plt
+from sklearn.manifold import TSNE
+
+
 # Training settings
 parser = argparse.ArgumentParser()
 parser.add_argument('--seed', type=int, default=42, help='Random seed.')
@@ -40,7 +44,7 @@ parser.add_argument("--use_exp_wt", dest='use_exp_wt', action='store_const', def
 parser.add_argument('--n-runs', type=int, default=10, help='number of runs for repeated experiments')
 parser.add_argument('--split', type=int, default=1,  help='choose which train/test split to use')
 
-parser.add_argument('--out-dir', type=str, default='runs/test',  help='output dir, runs/test, runs/playground')
+parser.add_argument('--out-dir', type=str, default='runs/playground',  help='output dir, runs/test, runs/playground')
 parser.add_argument('--nostdout', action="store_true",  help='do not output logging to terminal')
 
 
@@ -125,6 +129,27 @@ def train(model: nn.Module, _args):
     return test_accs
 
 
+
+def embedding_distribution(model: nn.Module, _args):
+    def plot(data, label, title):
+        tsne_model = TSNE(n_components=2)
+        coor = tsne_model.fit_transform(data)
+        plt.figure()
+        plt.scatter(coor[:, 0], coor[:, 1], c=label, s=5)
+        plt.title(title)
+        plt.savefig(f'{"/".join(out_dir.split("/")[:-1])}/Embedding_{args.dataset}_{title}.png')
+        plt.close()
+    v, e, label_idx, labels = _args.v, _args.e, _args.label_idx, _args.labels
+    v_init = v
+    e_init = e
+
+    embs = model.emb_dist(v_init, e_init)
+    embs = embs[-1]
+    labels = _args.all_labels.detach().cpu().numpy()
+    plot(embs[_args.label_idx], labels[_args.label_idx],'Train')
+    plot(embs[_args.test_idx], labels[_args.test_idx],'Test')
+
+
 def eval(pred_all, idx, args):
     pred = pred_all[idx]
     pred = torch.argmax(pred, -1)
@@ -166,7 +191,8 @@ if __name__=='__main__':
         setattr(train_arg, 'run', run)
         test_accuracy = train(model, train_arg)
 
+        embedding_distribution(model, train_arg)
         resultlogger.info(f"Average final test accuracy: {np.mean(test_accuracy)} ± {np.std(test_accuracy)}")
         resultlogger.info("Train cost: {:.4f}s".format(time.time() - run_start))
-    a = pd.DataFrame([log.split(',') for log in logs])
-    a.to_csv(f'{"/".join(out_dir.split("/")[:-1])}/perf_split_{args.split}.csv')
+    # a = pd.DataFrame([log.split(',') for log in logs])
+    # a.to_csv(f'{"/".join(out_dir.split("/")[:-1])}/perf_split_{args.split}.csv')
