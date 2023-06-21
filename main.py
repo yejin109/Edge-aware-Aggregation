@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 from argparse import Namespace
 
-from HNHNII.model_ver7 import load_model
+from HNHNII.model_ver8 import load_model
 from data import load_dataset
 from functionals.utils import log_arguments, get_logger
 import pickle
