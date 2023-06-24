@@ -14,7 +14,6 @@ def load_dataset(args):
     dset = _get_interface(args)
     train_idx, val_idx, test_idx = dset.load_splits(args.split)
 
-
     n_node = dset.num_nodes
     n_edge = dset.num_edges
 

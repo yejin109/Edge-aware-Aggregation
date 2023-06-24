@@ -1,0 +1,12 @@
+USE_SPLIT: True
+# USE_SPLIT: False
+
+# EXPANSION : clique
+EXPANSION : star
+
+
+DATA_DIR_SPLIT: database/processed
+DATA_DIR: database/raw
+DBLP_ver: 6
+
+DEVICE: cuda:0
